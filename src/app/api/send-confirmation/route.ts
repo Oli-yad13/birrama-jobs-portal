@@ -23,10 +23,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Removed roleDisplayNames as it is unused while email sending is disabled
+    // Send confirmation email using Resend
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'jobs@birrama.et',
+        to: email,
+        subject: `Your ${applicationType} Application Received`,
+        html: `<p>Dear ${name},</p><p>Thank you for applying for the ${role} ${applicationType} position. We have received your application and will review it soon.</p><p>Best regards,<br/>Birrama Team</p>`
+      })
+    });
 
-    // Simulate success response for now
-    return NextResponse.json({ success: true, message: 'Application received (email confirmation not sent)' });
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Resend API error:', errorData);
+      return NextResponse.json({ error: 'Failed to send confirmation email' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Application received and confirmation email sent' });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
